@@ -18,3 +18,7 @@ graphify-out/
 .vscode/
 .claude/
 .venv/
+
+CLAUDE.md
+memory.sh
+primer.md
