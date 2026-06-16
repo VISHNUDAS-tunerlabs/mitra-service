@@ -1,3 +1,4 @@
+{% extends "admin/base_site.html" %}
 {% comment %}
   Purpose:  Per-session cost drill-down page. Shows session metadata and a full
             chronological table of every UsageCostLog row for that session.
@@ -5,7 +6,6 @@
             logs         — QuerySet of UsageCostLog ordered by created_at.
   Navigation: Breadcrumb links back to the main dashboard.
 {% endcomment %}
-{% extends "admin/base_site.html" %}
 {% load static %}
 
 {% block title %}Session Cost Breakdown{% endblock %}
