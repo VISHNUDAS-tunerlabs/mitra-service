@@ -190,6 +190,28 @@
     font-size: 13px;
 }
 .table-box th { color: #555; font-weight: 600; }
+.bot-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.bot-filter-bar label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+}
+.bot-filter-bar select {
+    padding: 6px 10px;
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1a1a2e;
+    background: #f6f9fc;
+    cursor: pointer;
+    min-width: 200px;
+}
 </style>
 {% endblock %}
 
@@ -203,6 +225,16 @@
 {% block content %}
 <div id="content-main" class="cost-dashboard">
     <h1 class="page-title">Cost Monitoring Dashboard</h1>
+
+    <div class="bot-filter-bar">
+        <label for="bot-select">Filter by Bot:</label>
+        <select id="bot-select" onchange="applyBotFilter(this.value)">
+            <option value="">All Bots</option>
+            {% for bot in bots %}
+            <option value="{{ bot.id }}" {% if selected_bot == bot.id|stringformat:"s" %}selected{% endif %}>{{ bot.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
 
     <div class="chart-box daily-cost-box">
         <h2>Daily Cost (last 30 days)</h2>
@@ -385,7 +417,10 @@
         }
 
         function loadSessionCostChartPage(page) {
-            fetch(sessionCostChartUrl + '?page=' + page)
+            const botId = new URLSearchParams(window.location.search).get('bot') || '';
+            let url = sessionCostChartUrl + '?page=' + page;
+            if (botId) url += '&bot=' + botId;
+            fetch(url)
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
                     sessionCostChart.data.labels = data.labels;
@@ -415,13 +450,19 @@
         const container = document.getElementById('sessions-table-container');
         const partialUrl = '{% url "admin:chatbot_usagecostlog_sessions_table" %}';
 
+        function getBotId() {
+            return new URLSearchParams(window.location.search).get('bot') || '';
+        }
+
         function loadSessions(queryString, pushUrl) {
-            fetch(partialUrl + '?' + queryString)
+            const botId = getBotId();
+            const fullQuery = botId ? queryString + (queryString ? '&' : '') + 'bot=' + botId : queryString;
+            fetch(partialUrl + '?' + fullQuery)
                 .then(function (response) { return response.text(); })
                 .then(function (html) {
                     container.innerHTML = html;
                     if (pushUrl) {
-                        const url = window.location.pathname + (queryString ? '?' + queryString : '');
+                        const url = window.location.pathname + (fullQuery ? '?' + fullQuery : '');
                         window.history.replaceState(null, '', url);
                     }
                 });
@@ -450,6 +491,19 @@
             loadSessions(params.toString(), true);
         });
     })();
+
+    function applyBotFilter(botId) {
+        const params = new URLSearchParams(window.location.search);
+        if (botId) {
+            params.set('bot', botId);
+        } else {
+            params.delete('bot');
+        }
+        // Strip session-level params so the view resets to defaults on bot switch.
+        params.delete('page');
+        params.delete('chart_page');
+        window.location.href = window.location.pathname + '?' + params.toString();
+    }
 
     // CSS alone cannot reliably win against AdminLTE/Bootstrap specificity loaded via
     // static files, so inline styles are applied via JS as the guaranteed override path.
